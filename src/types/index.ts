@@ -12,6 +12,7 @@ export interface MediaItem {
   genres: string[];
   isTrending?: boolean;
   isPopular?: boolean;
+  isTV?: boolean;
 }
 
 export interface UserProgress {

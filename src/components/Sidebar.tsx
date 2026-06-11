@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Film, Tv, Download, User } from 'lucide-react';
+import { Home, Film, Tv, Download, User, Settings as SettingsIcon } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -18,6 +18,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     { id: 'movies', icon: Film, label: 'Movies' },
     { id: 'anime', icon: Tv, label: 'Anime' },
     { id: 'downloads', icon: Download, label: 'Downloads' },
+    { id: 'settings', icon: SettingsIcon, label: 'Settings' },
   ];
 
   return (

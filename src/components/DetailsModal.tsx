@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Play, Download, Star, Clock, Calendar } from 'lucide-react';
 import type { MediaItem } from '../types';
+import { useQuery } from '@tanstack/react-query';
+import { tmdbService } from '../services/tmdb';
 
 interface DetailsModalProps {
   item: MediaItem | null;
@@ -9,6 +11,20 @@ interface DetailsModalProps {
 }
 
 export const DetailsModal: React.FC<DetailsModalProps> = ({ item, onClose }) => {
+  const [selectedSeason, setSelectedSeason] = useState(1);
+
+  const { data: tvDetails } = useQuery({
+    queryKey: ['tv-details', item?.id],
+    queryFn: () => tmdbService.getDetails(item!.id, 'tv'),
+    enabled: !!item && item.id.startsWith('tmdb-') && !!item.isTV,
+  });
+
+  const { data: seasonDetails, isLoading: isLoadingSeason } = useQuery({
+    queryKey: ['tv-season', item?.id, selectedSeason],
+    queryFn: () => tmdbService.getTVSeason(item!.id, selectedSeason),
+    enabled: !!item && item.id.startsWith('tmdb-') && !!tvDetails?.seasons,
+  });
+
   if (!item) return null;
 
   return (
@@ -98,6 +114,65 @@ export const DetailsModal: React.FC<DetailsModalProps> = ({ item, onClose }) => 
                   <Download className="w-5 h-5 mr-2" />
                   Download Offline
                 </button>
+              </div>
+
+              {/* Dynamic Episodes Section */}
+              <div className="pt-8 border-t border-white/5 space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold">Episodes</h3>
+                  {tvDetails?.seasons && (
+                    <select 
+                      value={selectedSeason}
+                      onChange={(e) => setSelectedSeason(Number(e.target.value))}
+                      className="bg-white/5 border border-white/10 rounded-lg px-3 py-1 text-sm outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      {tvDetails.seasons.filter((s: any) => s.season_number > 0).map((s: any) => (
+                        <option key={s.id} value={s.season_number} className="bg-surface">
+                          Season {s.season_number}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  {isLoadingSeason ? (
+                    <div className="space-y-3">
+                      {[1,2,3].map(i => <div key={i} className="h-20 bg-white/5 animate-pulse rounded-2xl" />)}
+                    </div>
+                  ) : seasonDetails?.episodes ? (
+                    seasonDetails.episodes.map((ep: any) => (
+                      <div key={ep.id} className="group flex items-center p-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/5 transition-all cursor-pointer">
+                        <div className="relative w-32 aspect-video rounded-lg overflow-hidden shrink-0">
+                          <img 
+                            src={ep.still_path ? `https://image.tmdb.org/t/p/w300${ep.still_path}` : item.backdropUrl} 
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Play className="w-6 h-6 fill-current" />
+                          </div>
+                        </div>
+                        <div className="ml-4 flex-1">
+                          <h4 className="font-bold text-sm md:text-base line-clamp-1">
+                            {ep.episode_number}. {ep.name}
+                          </h4>
+                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{ep.overview || 'No description available.'}</p>
+                        </div>
+                        <button className="p-2 text-gray-500 hover:text-white transition-colors">
+                          <Download className="w-5 h-5" />
+                        </button>
+                      </div>
+                    ))
+                  ) : item.type === 'anime' ? (
+                     <div className="p-8 bg-white/5 rounded-2xl text-center text-gray-500 italic">
+                        Episode list for anime is coming soon via AniList mapping.
+                     </div>
+                  ) : (
+                    <div className="py-10 text-center text-gray-500 italic bg-white/5 rounded-3xl">
+                      Select a TV show to view episode lists.
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
